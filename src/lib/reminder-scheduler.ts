@@ -40,15 +40,19 @@ async function runReminders() {
   const targetMs = targetHours * 60 * 60 * 1000
   const windowMs = windowMinutes * 60 * 1000
 
-  // Normal window: events that are ~24h away
+  // Normal window: events that are ~targetHours away (±half-window)
   const start = new Date(now.getTime() + targetMs - windowMs / 2)
   const end = new Date(now.getTime() + targetMs + windowMs / 2)
 
   const targets = await getPendingReminderSubmissions(start, end)
 
-  // Late sends: events less than 24h away that haven't received a reminder yet
+  // Late/catch-up sends: also include events that are imminent, ongoing, or recently
+  // passed (up to 48h ago) that never received a reminder. This covers scenarios where
+  // the server was down or restarted and missed the normal window entirely.
+  const CATCHUP_HOURS = 48
+  const catchupStart = new Date(now.getTime() - CATCHUP_HOURS * 60 * 60 * 1000)
   const lateTargets = allowLateSends
-    ? await getPendingReminderSubmissions(now, new Date(now.getTime() + targetMs))
+    ? await getPendingReminderSubmissions(catchupStart, new Date(now.getTime() + targetMs))
     : []
 
   const allTargets = allowLateSends ? [...targets, ...lateTargets] : targets

@@ -47,9 +47,12 @@ async function runReminderDispatch() {
   const targets = await getPendingReminderSubmissions(start, end)
   const allowLateSends = sendIfLate === "1" || sendIfLate === "true" || sendIfLate === "yes"
 
-  // Optional: if the user registers late (event is < 24h away), send the reminder immediately.
+  // Optional: catch-up for late/missed reminders. Include events that are imminent,
+  // ongoing, or recently passed (up to 48h ago) that never received a reminder.
+  const CATCHUP_HOURS = 48
+  const catchupStart = new Date(now.getTime() - CATCHUP_HOURS * 60 * 60 * 1000)
   const lateTargets = allowLateSends
-    ? await getPendingReminderSubmissions(now, new Date(now.getTime() + targetMs))
+    ? await getPendingReminderSubmissions(catchupStart, new Date(now.getTime() + targetMs))
     : []
 
   const allTargets = allowLateSends ? [...targets, ...lateTargets] : targets

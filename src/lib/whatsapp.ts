@@ -91,7 +91,7 @@ export async function sendReminderWhatsApp(
   return sendWhatsAppMessage(phone, fallbackMessage, {
     templateName: process.env.WHATSAPP_REMINDER_TEMPLATE_NAME,
     templateLanguage: process.env.WHATSAPP_TEMPLATE_LANGUAGE || "en",
-    components: buildBodyComponents([variables?.name, variables?.event, variables?.city, variables?.schedule]),
+    components: buildBodyComponents([variables?.name, variables?.event, variables?.city]),
   })
 }
 
