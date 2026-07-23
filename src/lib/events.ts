@@ -299,6 +299,32 @@ export async function updateEvent(id: string, input: { name?: string; eventDate?
     if (input.eventDate !== undefined) updates.eventDate = input.eventDate
 
     await collection.updateOne({ _id: new ObjectId(id) }, { $set: updates })
+
+    // update all submissions
+    const db = await getDatabase()
+
+    const city = await db
+      .collection("cities")
+      .findOne({ _id: currentEvent.cityId })
+
+    if (city && input.eventDate !== undefined) {
+      await db.collection("submissions").updateMany(
+        {
+          event: currentEvent.name,
+          city: city.name,
+        },
+        {
+          $set: {
+            eventAt: new Date(input.eventDate),
+            reminderStatus: "pending",
+            reminderError: null,
+            reminderSentAt: null,
+            updatedAt: now,
+          },
+        }
+      )
+    }
+    
     const updated = await collection.findOne({ _id: new ObjectId(id) })
     if (!updated) {
       throw new Error("Event not found after update")
@@ -311,7 +337,7 @@ export async function updateEvent(id: string, input: { name?: string; eventDate?
   if (idx < 0) {
     throw new Error("Event not found")
   }
-  
+
   const currentEvent = records[idx]
   const existing = nameLower ? records.find((item) => item.cityId === currentEvent.cityId && item.nameLower === nameLower && item.id !== id) : undefined
   if (existing) {
@@ -319,8 +345,8 @@ export async function updateEvent(id: string, input: { name?: string; eventDate?
   }
 
   const now = new Date().toISOString()
-  const updated: FileEventRecord = { 
-    ...currentEvent, 
+  const updated: FileEventRecord = {
+    ...currentEvent,
     updatedAt: now,
     ...(trimmed ? { name: trimmed } : {}),
     ...(nameLower ? { nameLower } : {}),
